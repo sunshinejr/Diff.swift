@@ -155,7 +155,7 @@ public extension UITableView {
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
     public func animateRowAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element: Equatable, T.Generator.Element.Generator.Element: Equatable>(
-        oldData: T,
+        oldData oldData: T,
         newData: T,
         rowDeletionAnimation: UITableViewRowAnimation = .Automatic,
         rowInsertionAnimation: UITableViewRowAnimation = .Automatic,
@@ -312,7 +312,7 @@ public extension UICollectionView {
     /// - parameter newData:            Data which reflects the current state of `UICollectionView`
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     public func animateItemChanges<T: CollectionType where T.Generator.Element: Equatable>(
-        oldData: T,
+        oldData oldData: T,
         newData: T,
         indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         completion: ((Bool) -> Void)? = nil
@@ -328,7 +328,7 @@ public extension UICollectionView {
     /// - parameter isEqual:            A function comparing two elements of `T`
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     public func animateItemChanges<T: CollectionType>(
-        oldData: T,
+        oldData oldData: T,
         newData: T,
         isEqual: EqualityChecker<T>,
         indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
@@ -360,7 +360,7 @@ public extension UICollectionView {
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
     public func animateItemAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element: Equatable, T.Generator.Element.Generator.Element: Equatable>(
-        oldData: T,
+        oldData oldData: T,
         newData: T,
         indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 },

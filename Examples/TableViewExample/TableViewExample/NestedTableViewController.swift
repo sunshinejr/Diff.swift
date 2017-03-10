@@ -1,7 +1,7 @@
 
 import UIKit
 
-struct StringArray: Equatable, Collection {
+struct StringArray: Equatable, CollectionType {
 
     let elements: [String]
     let key: String
@@ -20,12 +20,12 @@ struct StringArray: Equatable, Collection {
         return elements[i]
     }
     
-    public func index(after i: Int) -> Int {
-        return elements.index(after: i)
+    internal func index(after i: Int) -> Int {
+        return elements.startIndex.advancedBy(i).successor()
     }
 }
 
-static func ==(fst: StringArray, snd: StringArray) -> Bool {
+func ==(fst: StringArray, snd: StringArray) -> Bool {
     return fst.key == snd.key
 }
 
@@ -74,10 +74,7 @@ class NestedTableViewController: UITableViewController {
     
     var currentConfiguration = 0 {
         didSet {
-            tableView.animateRowAndSectionChanges(
-                oldData: items[oldValue],
-                newData: items[currentConfiguration]
-            )
+            tableView.animateRowAndSectionChanges(oldData: items[oldValue], newData: items[currentConfiguration])
         }
     }
     
@@ -86,35 +83,35 @@ class NestedTableViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let addButton = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(refresh(_:)))
+        let addButton = UIBarButtonItem(barButtonSystemItem: .Refresh, target: self, action: #selector(refresh(_:)))
         self.navigationItem.rightBarButtonItem = addButton
     }
     
-    func refresh(_ sender: Any) {
+    func refresh(sender: AnyObject) {
         currentConfiguration = currentConfiguration == 0 ? 1 : 0;
     }
     
-    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    override func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let view = UILabel()
         view.text = items[currentConfiguration][section].key
         view.sizeToFit()
         return view
     }
     
-    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    override func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 30
     }
     
-    override func numberOfSections(in tableView: UITableView) -> Int {
+    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         return items[currentConfiguration].count
     }
     
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return items[currentConfiguration][section].elements.count
     }
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
         cell.textLabel?.text = items[currentConfiguration][indexPath.section].elements[indexPath.row]
         return cell
     }
