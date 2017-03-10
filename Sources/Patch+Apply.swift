@@ -1,17 +1,20 @@
 
-public extension RangeReplaceableCollection where Self.Iterator.Element: Equatable {
+import Foundation
 
-    public func apply(_ patch: [Patch<Generator.Element>]) -> Self {
+public extension RangeReplaceableCollectionType where Generator.Element: Equatable {
+
+    public func apply(patch: [Patch<Generator.Element>]) -> Self {
         var mutableSelf = self
 
         for change in patch {
             switch change {
-            case let .insertion(i, element):
-                let target = mutableSelf.index(mutableSelf.startIndex, offsetBy: IndexDistance(IntMax(i)))
-                mutableSelf.insert(element, at: target)
-            case let .deletion(i):
-                let target = mutableSelf.index(mutableSelf.startIndex, offsetBy: IndexDistance(IntMax(i)))
-                mutableSelf.remove(at: target)
+            case let .insertion(i as Index.Distance, element):
+                let target = mutableSelf.startIndex.advancedBy(i)
+                mutableSelf.insert(element, atIndex: target)
+            case let .deletion(i as Index.Distance):
+                let target = mutableSelf.startIndex.advancedBy(i)
+                mutableSelf.removeAtIndex(target)
+            default: ()
             }
         }
 
@@ -21,17 +24,17 @@ public extension RangeReplaceableCollection where Self.Iterator.Element: Equatab
 
 public extension String {
 
-    public func apply(_ patch: [Patch<String.CharacterView.Iterator.Element>]) -> String {
+    public func apply(patch: [Patch<String.CharacterView.Generator.Element>]) -> String {
         var mutableSelf = self
 
         for change in patch {
             switch change {
             case let .insertion(i, element):
-                let target = mutableSelf.index(mutableSelf.startIndex, offsetBy: IndexDistance(IntMax(i)))
-                mutableSelf.insert(element, at: target)
+                let target = mutableSelf.startIndex.advancedBy(i)
+                mutableSelf.insert(element, atIndex: target)
             case let .deletion(i):
-                let target = mutableSelf.index(mutableSelf.startIndex, offsetBy: IndexDistance(IntMax(i)))
-                mutableSelf.remove(at: target)
+                let target = mutableSelf.startIndex.advancedBy(i)
+                mutableSelf.removeAtIndex(target)
             }
         }
 

@@ -36,6 +36,18 @@ public struct ExtendedDiff: DiffProtocol {
     /// An array of particular diff operations
     public let elements: [ExtendedDiff.Element]
     let moveIndices: Set<Int>
+    
+    public var startIndex: Int {
+        return elements.startIndex
+    }
+    
+    public var endIndex: Int {
+        return elements.endIndex
+    }
+    
+    public subscript(i: Int) -> Element {
+        return elements[i]
+    }
 }
 
 extension ExtendedDiff.Element {
@@ -49,7 +61,7 @@ extension ExtendedDiff.Element {
     }
 }
 
-public extension Collection {
+public extension CollectionType {
 
     /// Creates an extended diff between the calee and `other` collection
     ///
@@ -57,7 +69,7 @@ public extension Collection {
     /// - parameter isEqual: instance comparator closure
     /// - complexity: O((N+M)*D). There's additional cost of O(D^2) to compute the moves.
     /// - returns: ExtendedDiff between the calee and `other` collection
-    public func extendedDiff(_ other: Self, isEqual: EqualityChecker<Self>) -> ExtendedDiff {
+    public func extendedDiff(other: Self, isEqual: EqualityChecker<Self>) -> ExtendedDiff {
         return extendedDiff(from: diff(other, isEqual: isEqual), other: other, isEqual: isEqual)
     }
 
@@ -130,15 +142,15 @@ public extension Collection {
         )
     }
 
-    func firstMatch(
-        _ diff: Diff,
+    public func firstMatch(
+        diff: Diff,
         dirtyIndices: Set<Diff.Index>,
         candidate: Diff.Element,
         candidateIndex: Diff.Index,
         other: Self,
         isEqual: EqualityChecker<Self>
     ) -> (ExtendedDiff.Element, Diff.Index)? {
-        for matchIndex in (candidateIndex + 1) ..< diff.endIndex {
+        for matchIndex in (candidateIndex + 1)..<diff.endIndex {
             if !dirtyIndices.contains(matchIndex) {
                 let match = diff[matchIndex]
                 if let move = createMatch(candidate, match: match, other: other, isEqual: isEqual) {
@@ -149,14 +161,14 @@ public extension Collection {
         return nil
     }
 
-    func createMatch(_ candidate: Diff.Element, match: Diff.Element, other: Self, isEqual: EqualityChecker<Self>) -> ExtendedDiff.Element? {
+    public func createMatch(candidate: Diff.Element, match: Diff.Element, other: Self, isEqual: EqualityChecker<Self>) -> ExtendedDiff.Element? {
         switch (candidate, match) {
         case (.delete, .insert):
-            if isEqual(itemOnStartIndex(advancedBy: candidate.at()), other.itemOnStartIndex(advancedBy: match.at())) {
+            if isEqual.f(itemOnStartIndex(advancedBy: candidate.at()), other.itemOnStartIndex(advancedBy: match.at())) {
                 return .move(from: candidate.at(), to: match.at())
             }
         case (.insert, .delete):
-            if isEqual(itemOnStartIndex(advancedBy: match.at()), other.itemOnStartIndex(advancedBy: candidate.at())) {
+            if isEqual.f(itemOnStartIndex(advancedBy: match.at()), other.itemOnStartIndex(advancedBy: candidate.at())) {
                 return .move(from: match.at(), to: candidate.at())
             }
         default: return nil
@@ -165,23 +177,23 @@ public extension Collection {
     }
 }
 
-public extension Collection where Iterator.Element: Equatable {
+public extension CollectionType where Generator.Element: Equatable {
 
     /// - seealso: `extendedDiff(_:isEqual:)`
-    public func extendedDiff(_ other: Self) -> ExtendedDiff {
-        return extendedDiff(other, isEqual: { $0 == $1 })
+    public func extendedDiff(other: Self) -> ExtendedDiff {
+        return extendedDiff(other, isEqual: EqualityChecker { $0 == $1 })
     }
 }
 
-extension Collection {
-    func itemOnStartIndex(advancedBy n: Int) -> Iterator.Element {
-        return self[self.index(startIndex, offsetBy: IndexDistance(n.toIntMax()))]
+extension CollectionType {
+    func itemOnStartIndex(advancedBy n: Int) -> Generator.Element {
+        return self[self.startIndex.advancedBy(n as! Index.Distance)]
     }
 }
 
-func flip(array: [Int]) -> [Int] {
+func flip(array array: [Int]) -> [Int] {
     return zip(array, array.indices)
-        .sorted { $0.0 < $1.0 }
+        .sort { $0.0 < $1.0 }
         .map { $0.1 }
 }
 

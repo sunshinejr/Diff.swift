@@ -1,34 +1,34 @@
-#if !os(macOS) && !os(watchOS)
+#if os(iOS)
 
 import UIKit
 
 struct BatchUpdate {
-    let deletions: [IndexPath]
-    let insertions: [IndexPath]
-    let moves: [(from: IndexPath, to: IndexPath)]
+    let deletions: [NSIndexPath]
+    let insertions: [NSIndexPath]
+    let moves: [(from: NSIndexPath, to: NSIndexPath)]
 
     init(
         diff: ExtendedDiff,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 }
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 }
         ) {
-        deletions = diff.flatMap { element -> IndexPath? in
+        deletions = diff.flatMap { element -> NSIndexPath? in
             switch element {
             case .delete(let at):
-                return indexPathTransform(IndexPath(row: at, section: 0))
+                return indexPathTransform(NSIndexPath(forRow: at, inSection: 0))
             default: return nil
             }
         }
-        insertions = diff.flatMap { element -> IndexPath? in
+        insertions = diff.flatMap { element -> NSIndexPath? in
             switch element {
             case .insert(let at):
-                return indexPathTransform(IndexPath(row: at, section: 0))
+                return indexPathTransform(NSIndexPath(forRow: at, inSection: 0))
             default: return nil
             }
         }
-        moves = diff.flatMap { element -> (IndexPath, IndexPath)? in
+        moves = diff.flatMap { element -> (NSIndexPath, NSIndexPath)? in
             switch element {
             case let .move(from, to):
-                return (indexPathTransform(IndexPath(row: from, section: 0)), indexPathTransform(IndexPath(row: to, section: 0)))
+                return (indexPathTransform(NSIndexPath(forRow: from, inSection: 0)), indexPathTransform(NSIndexPath(forRow: to, inSection: 0)))
             default: return nil
             }
         }
@@ -36,40 +36,40 @@ struct BatchUpdate {
 }
     
 struct NestedBatchUpdate {
-    let itemDeletions: [IndexPath]
-    let itemInsertions: [IndexPath]
-    let itemMoves: [(from: IndexPath, to: IndexPath)]
-    let sectionDeletions: IndexSet
-    let sectionInsertions: IndexSet
+    let itemDeletions: [NSIndexPath]
+    let itemInsertions: [NSIndexPath]
+    let itemMoves: [(from: NSIndexPath, to: NSIndexPath)]
+    let sectionDeletions: NSIndexSet
+    let sectionInsertions: NSIndexSet
     let sectionMoves: [(from: Int, to: Int)]
     
     init(
         diff: NestedExtendedDiff,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 }
         ) {
         
-        var itemDeletions: [IndexPath] = []
-        var itemInsertions: [IndexPath] = []
-        var itemMoves: [(IndexPath, IndexPath)] = []
-        var sectionDeletions: IndexSet = []
-        var sectionInsertions: IndexSet = []
+        var itemDeletions: [NSIndexPath] = []
+        var itemInsertions: [NSIndexPath] = []
+        var itemMoves: [(from: NSIndexPath, to: NSIndexPath)] = []
+        let sectionDeletions: NSMutableIndexSet = NSMutableIndexSet()
+        let sectionInsertions: NSMutableIndexSet = NSMutableIndexSet()
         var sectionMoves: [(from: Int, to: Int)] = []
         
         diff.forEach { element in
             switch element {
             case let .deleteElement(at, section):
-                itemDeletions.append(indexPathTransform(IndexPath(item: at, section: section)))
+                itemDeletions.append(indexPathTransform(NSIndexPath(forItem: at, inSection: section)))
             case let .insertElement(at, section):
-                itemInsertions.append(indexPathTransform(IndexPath(item: at, section: section)))
+                itemInsertions.append(indexPathTransform(NSIndexPath(forItem: at, inSection: section)))
             case let .moveElement(from, to):
-                itemMoves.append((indexPathTransform(IndexPath(item: from.item, section: from.section)), indexPathTransform(IndexPath(item: to.item, section: to.section))))
+                itemMoves.append((indexPathTransform(NSIndexPath(forItem: from.item, inSection: from.section)), indexPathTransform(NSIndexPath(forItem: to.item, inSection: to.section))))
             case let .deleteSection(at):
-                sectionDeletions.insert(sectionTransform(at))
+                sectionDeletions.addIndex(sectionTransform(at))
             case let .insertSection(at):
-                sectionInsertions.insert(sectionTransform(at))
+                sectionInsertions.addIndex(sectionTransform(at))
             case let .moveSection(move):
-                sectionMoves.append((sectionTransform(move.from), sectionTransform(move.to)))
+                sectionMoves.append((from: sectionTransform(move.from), to: sectionTransform(move.to)))
             }
         }
         
@@ -91,13 +91,13 @@ public extension UITableView {
     /// - parameter deletionAnimation:  Animation type for deletions
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
-    public func animateRowChanges<T: Collection>(
-        oldData: T,
+    public func animateRowChanges<T: CollectionType where T.Generator.Element: Equatable>(
+        oldData oldData: T,
         newData: T,
-        deletionAnimation: UITableViewRowAnimation = .automatic,
-        insertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 }
-    ) where T.Iterator.Element: Equatable {
+        deletionAnimation: UITableViewRowAnimation = .Automatic,
+        insertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 }
+    ) {
         apply(
             oldData.extendedDiff(newData),
             deletionAnimation: deletionAnimation,
@@ -114,14 +114,14 @@ public extension UITableView {
     /// - parameter deletionAnimation:  Animation type for deletions
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
-    public func animateRowChanges<T: Collection>(
-        oldData: T,
+    public func animateRowChanges<T: CollectionType>(
+        oldData oldData: T,
         newData: T,
         // https://twitter.com/dgregor79/status/570068545561735169
         isEqual: (EqualityChecker<T>),
-        deletionAnimation: UITableViewRowAnimation = .automatic,
-        insertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 }
+        deletionAnimation: UITableViewRowAnimation = .Automatic,
+        insertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 }
         ) {
         apply(
             oldData.extendedDiff(newData, isEqual: isEqual),
@@ -132,17 +132,17 @@ public extension UITableView {
     }
     
     public func apply(
-        _ diff: ExtendedDiff,
-        deletionAnimation: UITableViewRowAnimation = .automatic,
-        insertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 }
+        diff: ExtendedDiff,
+        deletionAnimation: UITableViewRowAnimation = .Automatic,
+        insertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 }
         ) {
         let update = BatchUpdate(diff: diff, indexPathTransform: indexPathTransform)
 
         beginUpdates()
-        deleteRows(at: update.deletions, with: deletionAnimation)
-        insertRows(at: update.insertions, with: insertionAnimation)
-        update.moves.forEach { moveRow(at: $0.from, to: $0.to) }
+        deleteRowsAtIndexPaths(update.deletions, withRowAnimation: deletionAnimation)
+        insertRowsAtIndexPaths(update.insertions, withRowAnimation: insertionAnimation)
+        update.moves.forEach { moveRowAtIndexPath($0.from, toIndexPath: $0.to) }
         endUpdates()
     }
     
@@ -154,19 +154,16 @@ public extension UITableView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateRowAndSectionChanges<T: Collection>(
+    public func animateRowAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element: Equatable, T.Generator.Element.Generator.Element: Equatable>(
         oldData: T,
         newData: T,
-        rowDeletionAnimation: UITableViewRowAnimation = .automatic,
-        rowInsertionAnimation: UITableViewRowAnimation = .automatic,
-        sectionDeletionAnimation: UITableViewRowAnimation = .automatic,
-        sectionInsertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 },
+        rowDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        rowInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 }
-        )
-        where T.Iterator.Element: Collection,
-        T.Iterator.Element: Equatable,
-        T.Iterator.Element.Iterator.Element: Equatable {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(to: newData),
                 rowDeletionAnimation: rowDeletionAnimation,
@@ -187,20 +184,18 @@ public extension UITableView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateRowAndSectionChanges<T: Collection>(
-        oldData: T,
+    public func animateRowAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element: Equatable>(
+        oldData oldData: T,
         newData: T,
         // https://twitter.com/dgregor79/status/570068545561735169
         isEqualElement: (NestedElementEqualityChecker<T>),
-        rowDeletionAnimation: UITableViewRowAnimation = .automatic,
-        rowInsertionAnimation: UITableViewRowAnimation = .automatic,
-        sectionDeletionAnimation: UITableViewRowAnimation = .automatic,
-        sectionInsertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 },
+        rowDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        rowInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 }
-        )
-        where T.Iterator.Element: Collection,
-        T.Iterator.Element: Equatable {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(
                     to: newData,
@@ -223,20 +218,18 @@ public extension UITableView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateRowAndSectionChanges<T: Collection>(
-        oldData: T,
+    public func animateRowAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element.Generator.Element: Equatable>(
+        oldData oldData: T,
         newData: T,
         // https://twitter.com/dgregor79/status/570068545561735169
         isEqualSection: (EqualityChecker<T>),
-        rowDeletionAnimation: UITableViewRowAnimation = .automatic,
-        rowInsertionAnimation: UITableViewRowAnimation = .automatic,
-        sectionDeletionAnimation: UITableViewRowAnimation = .automatic,
-        sectionInsertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 },
+        rowDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        rowInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 }
-        )
-        where T.Iterator.Element: Collection,
-        T.Iterator.Element.Iterator.Element: Equatable {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(
                     to: newData,
@@ -261,20 +254,19 @@ public extension UITableView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateRowAndSectionChanges<T: Collection>(
-        oldData: T,
+    public func animateRowAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType>(
+        oldData oldData: T,
         newData: T,
         isEqualSection: EqualityChecker<T>,
         // https://twitter.com/dgregor79/status/570068545561735169
         isEqualElement: (NestedElementEqualityChecker<T>),
-        rowDeletionAnimation: UITableViewRowAnimation = .automatic,
-        rowInsertionAnimation: UITableViewRowAnimation = .automatic,
-        sectionDeletionAnimation: UITableViewRowAnimation = .automatic,
-        sectionInsertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath = { $0 },
+        rowDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        rowInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 }
-        )
-        where T.Iterator.Element: Collection {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(
                     to: newData,
@@ -291,22 +283,22 @@ public extension UITableView {
     }
     
     public func apply(
-        _ diff: NestedExtendedDiff,
-        rowDeletionAnimation: UITableViewRowAnimation = .automatic,
-        rowInsertionAnimation: UITableViewRowAnimation = .automatic,
-        sectionDeletionAnimation: UITableViewRowAnimation = .automatic,
-        sectionInsertionAnimation: UITableViewRowAnimation = .automatic,
-        indexPathTransform: (IndexPath) -> IndexPath,
+        diff: NestedExtendedDiff,
+        rowDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        rowInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionDeletionAnimation: UITableViewRowAnimation = .Automatic,
+        sectionInsertionAnimation: UITableViewRowAnimation = .Automatic,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath,
         sectionTransform: (Int) -> Int
         ) {
         
         let update = NestedBatchUpdate(diff: diff, indexPathTransform: indexPathTransform, sectionTransform: sectionTransform)
         beginUpdates()
-        deleteRows(at: update.itemDeletions, with: rowDeletionAnimation)
-        insertRows(at: update.itemInsertions, with: rowInsertionAnimation)
-        update.itemMoves.forEach { moveRow(at: $0.from, to: $0.to) }
-        deleteSections(update.sectionDeletions, with: sectionDeletionAnimation)
-        insertSections(update.sectionInsertions, with: sectionInsertionAnimation)
+        deleteRowsAtIndexPaths(update.itemDeletions, withRowAnimation: rowDeletionAnimation)
+        insertRowsAtIndexPaths(update.itemInsertions, withRowAnimation: rowInsertionAnimation)
+        update.itemMoves.forEach { moveRowAtIndexPath($0.from, toIndexPath: $0.to) }
+        deleteSections(update.sectionDeletions, withRowAnimation: sectionDeletionAnimation)
+        insertSections(update.sectionInsertions, withRowAnimation: sectionInsertionAnimation)
         update.sectionMoves.forEach { moveSection($0.from, toSection: $0.to) }
         endUpdates()
     }
@@ -319,12 +311,12 @@ public extension UICollectionView {
     /// - parameter oldData:            Data which reflects the previous state of `UICollectionView`
     /// - parameter newData:            Data which reflects the current state of `UICollectionView`
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
-    public func animateItemChanges<T: Collection>(
+    public func animateItemChanges<T: CollectionType where T.Generator.Element: Equatable>(
         oldData: T,
         newData: T,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         completion: ((Bool) -> Void)? = nil
-    ) where T.Iterator.Element: Equatable {
+    ) {
         let diff = oldData.extendedDiff(newData)
         apply(diff, completion: completion, indexPathTransform: indexPathTransform)
     }
@@ -335,11 +327,11 @@ public extension UICollectionView {
     /// - parameter newData:            Data which reflects the current state of `UICollectionView`
     /// - parameter isEqual:            A function comparing two elements of `T`
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
-    public func animateItemChanges<T: Collection>(
+    public func animateItemChanges<T: CollectionType>(
         oldData: T,
         newData: T,
         isEqual: EqualityChecker<T>,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         completion: ((Bool) -> Swift.Void)? = nil
         ) {
         let diff = oldData.extendedDiff(newData, isEqual: isEqual)
@@ -347,15 +339,15 @@ public extension UICollectionView {
     }
     
     public func apply(
-        _ diff: ExtendedDiff,
+        diff: ExtendedDiff,
         completion: ((Bool) -> Swift.Void)? = nil,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 }
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 }
         ) {
         performBatchUpdates({
             let update = BatchUpdate(diff: diff, indexPathTransform: indexPathTransform)
-            self.deleteItems(at: update.deletions)
-            self.insertItems(at: update.insertions)
-            update.moves.forEach { self.moveItem(at: $0.from, to: $0.to) }
+            self.deleteItemsAtIndexPaths(update.deletions)
+            self.insertItemsAtIndexPaths(update.insertions)
+            update.moves.forEach { self.moveItemAtIndexPath($0.from, toIndexPath: $0.to) }
         }, completion: completion)
     }
     
@@ -367,16 +359,13 @@ public extension UICollectionView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateItemAndSectionChanges<T: Collection>(
+    public func animateItemAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element: Equatable, T.Generator.Element.Generator.Element: Equatable>(
         oldData: T,
         newData: T,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
-        sectionTransform: @escaping (Int) -> Int = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
+        sectionTransform: (Int) -> Int = { $0 },
         completion: ((Bool) -> Swift.Void)? = nil
-        )
-        where T.Iterator.Element: Collection,
-        T.Iterator.Element: Equatable,
-        T.Iterator.Element.Iterator.Element: Equatable {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(to: newData),
                 indexPathTransform: indexPathTransform,
@@ -394,16 +383,14 @@ public extension UICollectionView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateItemAndSectionChanges<T: Collection>(
-        oldData: T,
+    public func animateItemAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element: Equatable>(
+        oldData oldData: T,
         newData: T,
         isEqualElement: NestedElementEqualityChecker<T>,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
-        sectionTransform: @escaping (Int) -> Int = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
+        sectionTransform: (Int) -> Int = { $0 },
         completion: ((Bool) -> Swift.Void)? = nil
-        )
-        where T.Iterator.Element: Collection,
-        T.Iterator.Element: Equatable {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(
                     to: newData,
@@ -424,16 +411,14 @@ public extension UICollectionView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateItemAndSectionChanges<T: Collection>(
-        oldData: T,
+    public func animateItemAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType, T.Generator.Element.Generator.Element: Equatable>(
+        oldData oldData: T,
         newData: T,
         isEqualSection: EqualityChecker<T>,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
-        sectionTransform: @escaping (Int) -> Int = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
+        sectionTransform: (Int) -> Int = { $0 },
         completion: ((Bool) -> Swift.Void)? = nil
-        )
-        where T.Iterator.Element: Collection,
-        T.Iterator.Element.Iterator.Element: Equatable {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(
                     to: newData,
@@ -455,16 +440,15 @@ public extension UICollectionView {
     /// - parameter insertionAnimation: Animation type for insertions
     /// - parameter indexPathTransform: Closure which transforms zero-based `IndexPath` to desired  `IndexPath`
     /// - parameter sectionTransform:   Closure which transforms zero-based section(`Int`) into desired section(`Int`)
-    public func animateItemAndSectionChanges<T: Collection>(
-        oldData: T,
+    public func animateItemAndSectionChanges<T: CollectionType where T.Generator.Element: CollectionType>(
+        oldData oldData: T,
         newData: T,
         isEqualSection: EqualityChecker<T>,
         isEqualElement: NestedElementEqualityChecker<T>,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
-        sectionTransform: @escaping (Int) -> Int = { $0 },
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
+        sectionTransform: (Int) -> Int = { $0 },
         completion: ((Bool) -> Swift.Void)? = nil
-        )
-        where T.Iterator.Element: Collection {
+        ) {
             apply(
                 oldData.nestedExtendedDiff(
                     to: newData,
@@ -478,9 +462,9 @@ public extension UICollectionView {
     }
     
     public func apply(
-        _ diff: NestedExtendedDiff,
-        indexPathTransform: @escaping (IndexPath) -> IndexPath = { $0 },
-        sectionTransform: @escaping (Int) -> Int = { $0 },
+        diff: NestedExtendedDiff,
+        indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
+        sectionTransform: (Int) -> Int = { $0 },
         completion: ((Bool) -> Void)? = nil
         ) {
         performBatchUpdates({ 
@@ -488,9 +472,9 @@ public extension UICollectionView {
             self.insertSections(update.sectionInsertions)
             self.deleteSections(update.sectionDeletions)
             update.sectionMoves.forEach { self.moveSection($0.from, toSection: $0.to) }
-            self.deleteItems(at: update.itemDeletions)
-            self.insertItems(at: update.itemInsertions)
-            update.itemMoves.forEach { self.moveItem(at: $0.from, to: $0.to) }
+            self.deleteItemsAtIndexPaths(update.itemDeletions)
+            self.insertItemsAtIndexPaths(update.itemInsertions)
+            update.itemMoves.forEach { self.moveItemAtIndexPath($0.from, toIndexPath: $0.to) }
         }, completion: completion)
     }
 }

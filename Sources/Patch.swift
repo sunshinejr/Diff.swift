@@ -27,11 +27,12 @@ public extension Diff {
      - complexity: O(N)
      - returns: A sequence of steps to obtain `to` collection from the `from` one.
      */
-    public func patch<T: Collection>(
-        from: T,
+    public func patch<T: CollectionType where T.Generator.Element: Equatable>(
+        from from: T,
         to: T
-    ) -> [Patch<T.Iterator.Element>] where T.Iterator.Element: Equatable {
+    ) -> [Patch<T.Generator.Element>] {
         var shift = 0
+        
         return map { element in
             switch element {
             case let .delete(at):
@@ -53,10 +54,10 @@ public extension Diff {
  - complexity: O((N+M)*D)
  - returns: A sequence of steps to obtain `to` collection from the `from` one.
  */
-public func patch<T: Collection>(
+public func patch<T: CollectionType where T.Generator.Element: Equatable>(
     from: T,
     to: T
-) -> [Patch<T.Iterator.Element>] where T.Iterator.Element: Equatable {
+) -> [Patch<T.Generator.Element>] {
     return from.diff(to).patch(from: from, to: to)
 }
 

@@ -23,10 +23,10 @@ struct StringArray: Equatable, Collection {
     public func index(after i: Int) -> Int {
         return elements.index(after: i)
     }
-    
-    static func ==(fst: StringArray, snd: StringArray) -> Bool {
-        return fst.key == snd.key
-    }
+}
+
+static func ==(fst: StringArray, snd: StringArray) -> Bool {
+    return fst.key == snd.key
 }
 
 class NestedTableViewController: UITableViewController {

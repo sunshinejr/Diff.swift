@@ -1,14 +1,7 @@
 
-public protocol DiffProtocol: Collection, Sequence {
+public protocol DiffProtocol: CollectionType, SequenceType {
 
     associatedtype DiffElementType
-
-    #if swift(>=3.1)
-    // The typealias is causing crashes in SourceKitService under Swift 3.1 snapshots.
-    #else
-    // TODO: Verify that the typealias workaround is still required when Xcode 8.3 is released.
-    typealias Index = Int
-    #endif
 
     var elements: [DiffElementType] { get }
 }
@@ -75,16 +68,14 @@ public func ==(l: Point, r: Point) -> Bool {
 }
 
 /// A data structure representing single trace produced by the diff algorithm. See the [paper](http://www.xmailserver.org/diff2.pdf) for more information on traces.
-public struct Trace {
+public struct Trace: Equatable {
     public let from: Point
     public let to: Point
     public let D: Int
 }
 
-extension Trace: Equatable {
-    public static func ==(l: Trace, r: Trace) -> Bool {
-        return (l.from == r.from) && (l.to == r.to)
-    }
+public func ==(l: Trace, r: Trace) -> Bool {
+    return (l.from == r.from) && (l.to == r.to)
 }
 
 enum TraceType {
@@ -128,7 +119,7 @@ public extension String {
     /// - parameter other: a string to compare the calee to.
     /// - complexity: O((N+M)*D)
     /// - returns: an ExtendedDiff between the calee and `other` string
-    public func extendedDiff(_ other: String) -> ExtendedDiff {
+    public func extendedDiff(other: String) -> ExtendedDiff {
         if self == other {
             return ExtendedDiff(
                 source: Diff(elements: []),
@@ -143,7 +134,7 @@ public extension String {
 }
 
 extension Array {
-    func value(at index: Index) -> Iterator.Element? {
+    func value(at index: Index) -> Generator.Element? {
         if index < 0 || index >= self.count {
             return nil
         }
@@ -158,38 +149,40 @@ struct TraceStep {
     let nextX: Int?
 }
 
-public typealias EqualityChecker<T: Collection> = (T.Iterator.Element, T.Iterator.Element) -> Bool
+public struct EqualityChecker<T: CollectionType> {
+    let f: (T.Generator.Element, T.Generator.Element) -> Bool
+}
 
-public extension Collection {
-
+public extension CollectionType {
+    
     /// Creates a diff between the calee and `other` collection
     ///
     /// - parameter other: a collection to compare the calee to
     /// - complexity: O((N+M)*D)
     /// - returns: a Diff between the calee and `other` collection
     public func diff(
-        _ other: Self,
+        other: Self,
         isEqual: EqualityChecker<Self>
-    ) -> Diff {
+        ) -> Diff {
         let diffPath = outputDiffPathTraces(
             to: other,
             isEqual: isEqual
         )
         return Diff(elements:
             diffPath
-            .flatMap { Diff.Element(trace: $0) }
+                .flatMap { Diff.Element(trace: $0) }
         )
     }
-
+    
     /// Generates all traces required to create an output diff. See the [paper](http://www.xmailserver.org/diff2.pdf) for more information on traces.
     ///
     /// - parameter to: other collection
     ///
     /// - returns: all traces required to create an output diff
     public func diffTraces(
-        to: Self,
-        isEqual: EqualityChecker<Self>
-    ) -> [Trace] {
+        to to: Self,
+           isEqual: EqualityChecker<Self>
+        ) -> [Trace] {
         if self.count == 0 && to.count == 0 {
             return []
         } else if self.count == 0 {
@@ -200,20 +193,20 @@ public extension Collection {
             return myersDiffTraces(to: to, isEqual: isEqual)
         }
     }
-
+    
     /// Returns the traces which mark the shortest diff path.
     public func outputDiffPathTraces(
-        to: Self,
-        isEqual: EqualityChecker<Self>
-    ) -> [Trace] {
+        to to: Self,
+           isEqual: EqualityChecker<Self>
+        ) -> [Trace] {
         return findPath(
             diffTraces(to: to, isEqual: isEqual),
             n: Int(self.count.toIntMax()),
             m: Int(to.count.toIntMax())
         )
     }
-
-    fileprivate func tracesForDeletions() -> [Trace] {
+    
+    private func tracesForDeletions() -> [Trace] {
         var traces = [Trace]()
         for index in 0 ..< self.count.toIntMax() {
             let intIndex = index.toIntMax()
@@ -221,8 +214,8 @@ public extension Collection {
         }
         return traces
     }
-
-    fileprivate func tracesForInsertions(to: Self) -> [Trace] {
+    
+    private func tracesForInsertions(to to: Self) -> [Trace] {
         var traces = [Trace]()
         for index in 0 ..< to.count.toIntMax() {
             let intIndex = index.toIntMax()
@@ -230,38 +223,38 @@ public extension Collection {
         }
         return traces
     }
-
-    fileprivate func myersDiffTraces(
-        to: Self,
-        isEqual: (Iterator.Element, Iterator.Element) -> Bool
-    ) -> [Trace] {
-
+    
+    private func myersDiffTraces(
+        to to: Self,
+           isEqual: EqualityChecker<Self>
+        ) -> [Trace] {
+        
         let fromCount = Int(self.count.toIntMax())
         let toCount = Int(to.count.toIntMax())
         var traces = Array<Trace>()
-
+        
         let max = fromCount + toCount // this is arbitrary, maximum difference between from and to. N+M assures that this algorithm always finds from diff
-
-        var vertices = Array(repeating: -1, count: 2 * Int(max) + 1) // from [0...2*max], it is -max...max in the whitepaper
-
+        
+        var vertices = Array(count: 2 * Int(max) + 1, repeatedValue: -1) // from [0...2*max], it is -max...max in the whitepaper
+        
         vertices[max + 1] = 0
-
+        
         for numberOfDifferences in 0 ... max {
-            for k in stride(from: (-numberOfDifferences), through: numberOfDifferences, by: 2) {
-
+            for k in (-numberOfDifferences).stride(through: numberOfDifferences, by: 2) {
+                
                 let index = k + max
                 let traceStep = TraceStep(D: numberOfDifferences, k: k, previousX: vertices.value(at: index - 1), nextX: vertices.value(at: index + 1))
                 if let trace = bound(trace: nextTrace(traceStep), maxX: fromCount, maxY: toCount) {
                     var x = trace.to.x
                     var y = trace.to.y
-
+                    
                     traces.append(trace)
-
+                    
                     // keep going as long as they match on diagonal k
                     while x >= 0 && y >= 0 && x < fromCount && y < toCount {
                         let targetItem = to.itemOnStartIndex(advancedBy: y)
                         let baseItem = itemOnStartIndex(advancedBy: x)
-                        if isEqual(baseItem, targetItem) {
+                        if isEqual.f(baseItem, targetItem) {
                             x += 1
                             y += 1
                             traces.append(Trace(from: Point(x: x - 1, y: y - 1), to: Point(x: x, y: y), D: numberOfDifferences))
@@ -269,9 +262,9 @@ public extension Collection {
                             break
                         }
                     }
-
+                    
                     vertices[index] = x
-
+                    
                     if x >= fromCount && y >= toCount {
                         return traces
                     }
@@ -280,19 +273,19 @@ public extension Collection {
         }
         return []
     }
-
-    fileprivate func bound(trace: Trace, maxX: Int, maxY: Int) -> Trace? {
+    
+    private func bound(trace trace: Trace, maxX: Int, maxY: Int) -> Trace? {
         guard trace.to.x <= maxX && trace.to.y <= maxY else {
             return nil
         }
         return trace
     }
-
-    fileprivate func nextTrace(_ traceStep: TraceStep) -> Trace {
+    
+    private func nextTrace(traceStep: TraceStep) -> Trace {
         let traceType = nextTraceType(traceStep)
         let k = traceStep.k
         let D = traceStep.D
-
+        
         if traceType == .insertion {
             let x = traceStep.nextX!
             return Trace(from: Point(x: x, y: x - k - 1), to: Point(x: x, y: x - k), D: D)
@@ -301,17 +294,17 @@ public extension Collection {
             return Trace(from: Point(x: x - 1, y: x - k), to: Point(x: x, y: x - k), D: D)
         }
     }
-
-    fileprivate func nextTraceType(_ traceStep: TraceStep) -> TraceType {
+    
+    private func nextTraceType(traceStep: TraceStep) -> TraceType {
         let D = traceStep.D
         let k = traceStep.k
         let previousX = traceStep.previousX
         let nextX = traceStep.nextX
-
+        
         if k == -D {
             return .insertion
         } else if k != D {
-            if let previousX = previousX, let nextX = nextX, previousX < nextX {
+            if let previousX = previousX, let nextX = nextX where previousX < nextX {
                 return .insertion
             }
             return .deletion
@@ -319,23 +312,23 @@ public extension Collection {
             return .deletion
         }
     }
-
-    fileprivate func findPath(_ traces: [Trace], n: Int, m: Int) -> [Trace] {
-
+    
+    private func findPath(traces: [Trace], n: Int, m: Int) -> [Trace] {
+        
         guard traces.count > 0 else {
             return []
         }
-
+        
         var array = [Trace]()
         var item = traces.last!
         array.append(item)
-
+        
         if item.from != Point(x: 0, y: 0) {
-            for trace in traces.reversed() {
+            for trace in traces.reverse() {
                 if trace.to.x == item.from.x && trace.to.y == item.from.y {
-                    array.insert(trace, at: 0)
+                    array.insert(trace, atIndex: 0)
                     item = trace
-
+                    
                     if trace.from == Point(x: 0, y: 0) {
                         break
                     }
@@ -346,50 +339,45 @@ public extension Collection {
     }
 }
 
-public extension Collection where Iterator.Element: Equatable {
+public extension CollectionType where Generator.Element: Equatable {
 
     /// - seealso: `diff(_:isEqual:)`
     public func diff(
-        _ other: Self
-    ) -> Diff {
-        return diff(other, isEqual: { $0 == $1 })
+        other: Self
+        ) -> Diff {
+        return diff(other, isEqual: EqualityChecker { $0 == $1 })
     }
-
+    
     /// - seealso: `diffTraces(to:isEqual:)`
     public func diffTraces(
-        to: Self
-    ) -> [Trace] {
-        return diffTraces(to: to, isEqual: { $0 == $1 })
+        to to: Self
+        ) -> [Trace] {
+        return diffTraces(to: to, isEqual: EqualityChecker { $0 == $1 })
     }
-
+    
     /// - seealso: `outputDiffPathTraces(to:isEqual:)`
     public func outputDiffPathTraces(
-        to: Self
-    ) -> [Trace] {
-        return outputDiffPathTraces(to: to, isEqual: { $0 == $1 })
-    }
-}
-
-extension DiffProtocol {
-
-    public typealias IndexType = Array<DiffElementType>.Index
-
-    public var startIndex: IndexType {
-        return elements.startIndex
-    }
-
-    public var endIndex: IndexType {
-        return elements.endIndex
-    }
-
-    public subscript(i: IndexType) -> DiffElementType {
-        return elements[i]
+        to to: Self
+        ) -> [Trace] {
+        return outputDiffPathTraces(to: to, isEqual: EqualityChecker { $0 == $1 })
     }
 }
 
 public extension Diff {
     public init(traces: [Trace]) {
         elements = traces.flatMap { Diff.Element(trace: $0) }
+    }
+    
+    public var startIndex: Int {
+        return elements.startIndex
+    }
+
+    public var endIndex: Int {
+        return elements.endIndex
+    }
+
+    public subscript(i: Int) -> Diff.Element {
+        return elements[i]
     }
 }
 

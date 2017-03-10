@@ -9,7 +9,7 @@ class LinkedList<T> {
     }
 
     init?(array: [T]) {
-        let reversed = array.reversed()
+        let reversed = array.reverse()
         guard let first = array.first else {
             return nil
         }
@@ -51,7 +51,7 @@ class DoublyLinkedList<T> {
     }
 
     init?(array: [T]) {
-        let reversed = array.reversed()
+        let reversed = array.reverse()
         guard let first = array.first else {
             return nil
         }

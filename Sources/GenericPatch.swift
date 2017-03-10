@@ -37,22 +37,31 @@ func edgeType<T>(from: DoublyLinkedList<SortedPatchElement<T>>, to: DoublyLinked
 
 func shiftPatchElement<T>(node: DoublyLinkedList<SortedPatchElement<T>>) {
     var from = node.previous
-    while let nextFrom = from, nextFrom.value.sourceIndex < node.value.sourceIndex {
-        shiftPatchElement(from: nextFrom, to: node)
+    while let nextFrom = from where nextFrom.value.sourceIndex < node.value.sourceIndex {
+        shiftPatchElement(nextFrom, to: node)
         from = nextFrom.previous
     }
 
     if let next = node.next {
-        shiftPatchElement(node: next)
+        shiftPatchElement(next)
     }
 }
 
 func shiftPatchElement<T>(from: DoublyLinkedList<SortedPatchElement<T>>, to: DoublyLinkedList<SortedPatchElement<T>>) {
-    let type = edgeType(from: from, to: to)
+    let type = edgeType(from, to: to)
     switch type {
     case .cycle:
         fatalError()
-    case .neighbor(let direction), .jump(let direction):
+    case .neighbor(let direction):
+        if case .left = direction {
+            switch (from.value.value, to.value.value) {
+            case (.insertion, _):
+                to.value = to.value.decremented()
+            case (.deletion, _):
+                to.value = to.value.incremented()
+            }
+        }
+    case .jump(let direction):
         if case .left = direction {
             switch (from.value.value, to.value.value) {
             case (.insertion, _):
@@ -103,10 +112,10 @@ extension Patch {
 func shiftedPatchElements<T>(from sortedPatchElements: [SortedPatchElement<T>]) -> [SortedPatchElement<T>] {
     let linkedList = DoublyLinkedList(linkedList: LinkedList(array: sortedPatchElements))
     if let secondElement = linkedList?.next {
-        shiftPatchElement(node: secondElement)
+        shiftPatchElement(secondElement)
     }
-
-    guard let result = linkedList?.array().sorted(by: { (fst, second) -> Bool in
+    
+    guard let result = linkedList?.array().sort({ (fst, second) -> Bool in
         return fst.sortedIndex < second.sortedIndex
     }) else {
         return []

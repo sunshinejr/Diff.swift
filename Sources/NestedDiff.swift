@@ -20,17 +20,29 @@ public struct NestedDiff: DiffProtocol {
     }
 
     public let elements: [Element]
+    
+    public var startIndex: Int {
+        return elements.startIndex
+    }
+    
+    public var endIndex: Int {
+        return elements.endIndex
+    }
+    
+    public subscript(i: Int) -> Element {
+        return elements[i]
+    }
 }
 
-public extension Collection
-    where Iterator.Element: Collection {
+public extension CollectionType
+    where Generator.Element: CollectionType {
 
     /// Creates a diff between the callee and `other` collection. It diffs elements two levels deep (therefore "nested")
     ///
     /// - parameter other: a collection to compare the calee to
     /// - returns: a `NestedDiff` between the calee and `other` collection
     public func nestedDiff(
-        to: Self,
+        to to: Self,
         isEqualSection: EqualityChecker<Self>,
         isEqualElement: NestedElementEqualityChecker<Self>
     ) -> NestedDiff {
@@ -69,7 +81,7 @@ public extension Collection
 
         let elementDiff = zip(zip(fromSections, toSections), matchingSectionTraces)
             .flatMap { sections, trace -> [NestedDiff.Element] in
-                return sections.0.diff(sections.1, isEqual: isEqualElement).map { diffElement -> NestedDiff.Element in
+                return sections.0.diff(sections.1, isEqual: EqualityChecker(f: isEqualElement.f)).map { diffElement -> NestedDiff.Element in
                     switch diffElement {
                     case let .delete(at):
                         return .deleteElement(at, section: trace.from.x)
@@ -83,51 +95,51 @@ public extension Collection
     }
 }
 
-public extension Collection
-    where Iterator.Element: Collection,
-    Iterator.Element.Iterator.Element: Equatable {
+public extension CollectionType
+    where Generator.Element: CollectionType,
+    Generator.Element.Generator.Element: Equatable {
 
     /// - seealso: `nestedDiff(to:isEqualSection:isEqualElement:)`
     public func nestedDiff(
-        to: Self,
+        to to: Self,
         isEqualSection: EqualityChecker<Self>
     ) -> NestedDiff {
         return nestedDiff(
             to: to,
             isEqualSection: isEqualSection,
-            isEqualElement: { $0 == $1 }
+            isEqualElement: NestedElementEqualityChecker { $0 == $1 }
         )
     }
 }
 
-public extension Collection
-    where Iterator.Element: Collection,
-    Iterator.Element: Equatable {
+public extension CollectionType
+    where Generator.Element: CollectionType,
+    Generator.Element: Equatable {
 
     /// - seealso: `nestedDiff(to:isEqualSection:isEqualElement:)`
     public func nestedDiff(
-        to: Self,
+        to to: Self,
         isEqualElement: NestedElementEqualityChecker<Self>
     ) -> NestedDiff {
         return nestedDiff(
             to: to,
-            isEqualSection: { $0 == $1 },
+            isEqualSection: EqualityChecker { $0 == $1 },
             isEqualElement: isEqualElement
         )
     }
 }
 
-public extension Collection
-    where Iterator.Element: Collection,
-    Iterator.Element: Equatable,
-    Iterator.Element.Iterator.Element: Equatable {
+public extension CollectionType
+    where Generator.Element: CollectionType,
+    Generator.Element: Equatable,
+    Generator.Element.Generator.Element: Equatable {
 
     /// - seealso: `nestedDiff(to:isEqualSection:isEqualElement:)`
-    public func nestedDiff(to: Self) -> NestedDiff {
+    public func nestedDiff(to to: Self) -> NestedDiff {
         return nestedDiff(
             to: to,
-            isEqualSection: { $0 == $1 },
-            isEqualElement: { $0 == $1 }
+            isEqualSection: EqualityChecker { $0 == $1 },
+            isEqualElement: NestedElementEqualityChecker { $0 == $1 }
         )
     }
 }
