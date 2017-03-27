@@ -2,10 +2,10 @@
 
 import UIKit
 
-struct BatchUpdate {
-    let deletions: [NSIndexPath]
-    let insertions: [NSIndexPath]
-    let moves: [(from: NSIndexPath, to: NSIndexPath)]
+public struct BatchUpdate {
+    public let deletions: [NSIndexPath]
+    public let insertions: [NSIndexPath]
+    public let moves: [(from: NSIndexPath, to: NSIndexPath)]
 
     init(
         diff: ExtendedDiff,
@@ -35,13 +35,13 @@ struct BatchUpdate {
     }
 }
     
-struct NestedBatchUpdate {
-    let itemDeletions: [NSIndexPath]
-    let itemInsertions: [NSIndexPath]
-    let itemMoves: [(from: NSIndexPath, to: NSIndexPath)]
-    let sectionDeletions: NSIndexSet
-    let sectionInsertions: NSIndexSet
-    let sectionMoves: [(from: Int, to: Int)]
+public struct NestedBatchUpdate {
+    public let itemDeletions: [NSIndexPath]
+    public let itemInsertions: [NSIndexPath]
+    public let itemMoves: [(from: NSIndexPath, to: NSIndexPath)]
+    public let sectionDeletions: NSIndexSet
+    public let sectionInsertions: NSIndexSet
+    public let sectionMoves: [(from: Int, to: Int)]
     
     init(
         diff: NestedExtendedDiff,
