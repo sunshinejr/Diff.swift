@@ -7,7 +7,7 @@ public struct BatchUpdate {
     public let insertions: [NSIndexPath]
     public let moves: [(from: NSIndexPath, to: NSIndexPath)]
 
-    init(
+    public init(
         diff: ExtendedDiff,
         indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 }
         ) {
@@ -43,7 +43,7 @@ public struct NestedBatchUpdate {
     public let sectionInsertions: NSIndexSet
     public let sectionMoves: [(from: Int, to: Int)]
     
-    init(
+    public init(
         diff: NestedExtendedDiff,
         indexPathTransform: (NSIndexPath) -> NSIndexPath = { $0 },
         sectionTransform: (Int) -> Int = { $0 }
